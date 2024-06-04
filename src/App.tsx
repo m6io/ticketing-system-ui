@@ -1,35 +1,86 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useEffect } from "react";
+import useAuthStore from "@/store";
+import { Navigate, Route, Routes } from "react-router-dom";
+import { Login, Register } from "@/routes/Auth";
+import { Tickets } from "@/routes/Tickets";
+import { Layout } from "@/components/Layout";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { ViewTicket } from "@/routes/Ticket";
+import { EditTicket } from "@/routes/TicketEdit";
+import { CreateTicket } from "@/routes/TicketNew";
+import { Toaster } from "@/components/ui/toaster";
+import { useToast } from "@/components/ui/use-toast";
+import useOnNavigate from "@/hooks/useOnNavigate";
 
-function App() {
-  const [count, setCount] = useState(0)
+const App: React.FC = () => {
+  const { isAuthenticated, verifyToken, error, success, resetNotification } =
+    useAuthStore();
+  const { toast } = useToast();
+
+  useOnNavigate();
+
+  useEffect(() => {
+    verifyToken();
+  }, [verifyToken]);
+
+  useEffect(() => {
+    if (error) {
+      toast({ title: "Error", description: error, variant: "destructive" });
+      resetNotification();
+    }
+    if (success) {
+      toast({ title: "Success", description: success });
+      resetNotification();
+    }
+  }, [error, success, toast, resetNotification]);
 
   return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+    <TooltipProvider>
+      <Layout>
+        <div className="container mx-auto p-4">
+          <Routes>
+            <Route
+              path="/"
+              element={isAuthenticated ? <Navigate to="/tickets" /> : <Login />}
+            />
+            <Route
+              path="/register"
+              element={
+                isAuthenticated ? <Navigate to="/tickets" /> : <Register />
+              }
+            />
+            <Route
+              path="/tickets"
+              element={isAuthenticated ? <Tickets /> : <Navigate to="/" />}
+            />
+            <Route
+              path="/tickets/:id"
+              element={isAuthenticated ? <ViewTicket /> : <Navigate to="/" />}
+            />
+            <Route
+              path="/tickets/:id/edit"
+              element={isAuthenticated ? <EditTicket /> : <Navigate to="/" />}
+            />
+            <Route
+              path="/tickets/new"
+              element={isAuthenticated ? <CreateTicket /> : <Navigate to="/" />}
+            />
+            <Route
+              path="*"
+              element={
+                isAuthenticated ? (
+                  <div>404 - Page Not Found</div>
+                ) : (
+                  <Navigate to="/" />
+                )
+              }
+            />
+          </Routes>
+        </div>
+      </Layout>
+      <Toaster />
+    </TooltipProvider>
+  );
+};
 
-export default App
+export default App;
